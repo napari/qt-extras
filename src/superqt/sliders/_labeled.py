@@ -6,15 +6,14 @@ from functools import partial
 from typing import Any, overload
 
 from qtpy.QtCore import QPoint, QSize, Qt, Signal
-from qtpy.QtGui import QFontMetrics, QValidator
+from qtpy.QtGui import QDoubleValidator, QFontMetrics, QValidator
 from qtpy.QtWidgets import (
     QAbstractSlider,
     QApplication,
     QBoxLayout,
-    QDoubleSpinBox,
     QHBoxLayout,
+    QLineEdit,
     QSlider,
-    QSpinBox,
     QStyle,
     QStyleOptionSpinBox,
     QVBoxLayout,
@@ -600,7 +599,7 @@ class QLabeledDoubleRangeSlider(QLabeledRangeSlider):
             lbl.setDecimals(prec)
 
 
-class SliderLabel(QDoubleSpinBox):
+class SliderLabel(QLineEdit):
     def __init__(
         self,
         slider: QSlider,
@@ -610,36 +609,74 @@ class SliderLabel(QDoubleSpinBox):
     ) -> None:
         super().__init__(parent=parent)
         self._slider = slider
+        self._prefix = ""
+        self._suffix = ""
+        self._min = slider.minimum()
+        self._max = slider.maximum()
+        self._value = self._min
+        self._callback = connect
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self.setMode(EdgeLabelMode.LabelIsValue)
         self.setDecimals(0)
+        self.setText(str(self._value))
+        validator = QDoubleValidator(self)
+        validator.setNotation(QDoubleValidator.Notation.ScientificNotation)
+        self.setValidator(validator)
 
-        self.setRange(slider.minimum(), slider.maximum())
         slider.rangeChanged.connect(self._update_size)
         self.setAlignment(alignment)
-        self.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         self.setStyleSheet("background:transparent; border: 0;")
         if connect is not None:
-            self.editingFinished.connect(lambda: connect(self.value()))
+            self.editingFinished.connect(self._editig_finished)
         self.editingFinished.connect(self._silent_clear_focus)
         self._update_size()
 
+    def _editig_finished(self):
+        self._silent_clear_focus()
+        self.setValue(float(self.text()))
+        if self._callback:
+            self._callback(self.value())
+
+    def setRange(self, min_: float, max_: float) -> None:
+        if max_ < min_:
+            max_ = min_
+        self._min = min_
+        self._max = max_
+
     def setDecimals(self, prec: int) -> None:
-        super().setDecimals(prec)
+        # super().setDecimals(prec)
         self._update_size()
 
+    def value(self) -> float:
+        return self._value
+
     def setValue(self, val: Any) -> None:
-        super().setValue(val)
+        if val < self._min:
+            val = self._min
+        elif val > self._max:
+            val = self._max
+        self._value = val
+        self.setText(str(val))
         if self._mode == EdgeLabelMode.LabelIsRange:
             self._update_size()
 
-    def setMaximum(self, max: float) -> None:
-        super().setMaximum(max)
+    def minimum(self):
+        return self._min
+
+    def setMaximum(self, max_: float) -> None:
+        if max_ < self._min:
+            max_ = self._min
+        self._max = max_
         if self._mode == EdgeLabelMode.LabelIsValue:
             self._update_size()
 
-    def setMinimum(self, min: float) -> None:
-        super().setMinimum(min)
+    def maximum(self):
+        return self._max
+
+    def setMinimum(self, min_: float) -> None:
+        if min_ > self._max:
+            min_ = self._max
+        self._min = min_
         if self._mode == EdgeLabelMode.LabelIsValue:
             self._update_size()
 
@@ -658,6 +695,20 @@ class SliderLabel(QDoubleSpinBox):
             self._slider.rangeChanged.connect(self.setRange)
         self._update_size()
 
+    def prefix(self) -> str:
+        return self._prefix
+
+    def setPrefix(self, prefix: str) -> None:
+        self._prefix = prefix
+        self._update_size()
+
+    def suffix(self) -> str:
+        return self._suffix
+
+    def setSuffix(self, suffix: str) -> None:
+        self._suffix = suffix
+        self._update_size()
+
     # --------------- private ----------------
 
     def _silent_clear_focus(self) -> None:
@@ -672,21 +723,19 @@ class SliderLabel(QDoubleSpinBox):
 
         if self._mode & EdgeLabelMode.LabelIsValue:
             # determine width based on min/max/specialValue
-            mintext = self.textFromValue(self.minimum())[:18]
-            maxtext = self.textFromValue(self.maximum())[:18]
+            mintext = str(self.minimum())[:18]
+            maxtext = str(self.maximum())[:18]
             w = max(0, _fm_width(fm, mintext + fixed_content))
             w = max(w, _fm_width(fm, maxtext + fixed_content))
-            if self.specialValueText():
-                w = max(w, _fm_width(fm, self.specialValueText()))
             if self._mode & EdgeLabelMode.LabelIsRange:
                 w += 8  # it seems as thought suffix() is not enough
         else:
-            w = max(0, _fm_width(fm, self.textFromValue(self.value()))) + 3
+            w = max(0, _fm_width(fm, str(self.value()))) + 3
 
         w += 3  # cursor blinking space
         # get the final size hint
         opt = QStyleOptionSpinBox()
-        self.initStyleOption(opt)
+        # self.initStyleOption(opt)
         size = self.style().sizeFromContents(
             QStyle.ContentsType.CT_SpinBox, opt, QSize(w, h), self
         )
