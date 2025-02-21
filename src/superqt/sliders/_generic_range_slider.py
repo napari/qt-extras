@@ -165,7 +165,21 @@ class _GenericRangeSlider(_GenericSlider):
         self._doSliderMove()
 
     def setStyleSheet(self, styleSheet: str) -> None:
-        return super().setStyleSheet(self._patch_style(styleSheet))
+        custom_styles = """
+        QSlider{
+            background-color: none;
+        }
+
+        QSlider::add-page:vertical {
+            background: none;
+            border: none;
+        }
+
+        QRangeSlider {
+            qproperty-barColor: #9FCBFF;
+        }
+        """
+        return super().setStyleSheet(self._patch_style(styleSheet + custom_styles))
 
     def _patch_style(self, style: str):
         """Override to patch style options before painting."""

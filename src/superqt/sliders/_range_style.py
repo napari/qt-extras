@@ -68,7 +68,13 @@ class RangeSliderStyle:
             val = _val
 
         if opt.tickPosition != QSlider.TickPosition.NoTicks:
-            val.setAlphaF(self.tick_bar_alpha or SYSTEM_STYLE.tick_bar_alpha)
+            if isinstance(val, QColor):
+                val.setAlphaF(self.tick_bar_alpha or SYSTEM_STYLE.tick_bar_alpha)
+            elif isinstance(val, QGradient):
+                for i in range(val.colorCount()):
+                    color = val.colorAt(i)
+                    color.setAlphaF(self.tick_bar_alpha or SYSTEM_STYLE.tick_bar_alpha)
+                    val.setColorAt(i, color)
 
         return QBrush(val)
 
@@ -287,6 +293,15 @@ def update_styles_from_stylesheet(obj: _GenericRangeSlider) -> None:
                     thickness = float(bgrd.groups()[-1])
                     setattr(obj._style, f"{orient}_thickness", thickness)
                     obj._style.has_stylesheet = True
+
+    # Find bar color
+    match = re.search(r"QRangeSlider\s*{\s*([^}]+)}", qss, re.S)
+    if match:
+        for line in reversed(match.groups()[0].splitlines()):
+            bgrd = re.search(r"qproperty-barColor\s*:\s*(.+);", line)
+            if bgrd:
+                obj._setBarColor(bgrd.groups()[-1])
+                obj._style.has_stylesheet = True
 
 
 # a fix for https://bugreports.qt.io/browse/QTBUG-98093

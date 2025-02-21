@@ -227,3 +227,31 @@ setSliderPosition(val: Sequence[int]) -> None
 ```python
 sliderMoved(Tuple[int, ...])
 ```
+
+## Custom Styles for Compatibility with qdarkstyle
+
+To ensure compatibility with qdarkstyle, you can add custom styles for `QRangeSlider` as shown below:
+
+```python
+QSS = """
+QSlider {
+    background-color: none;
+}
+
+QSlider::add-page:vertical {
+    background: none;
+    border: none;
+}
+
+QRangeSlider {
+    qproperty-barColor: #9FCBFF;
+}
+"""
+```
+
+You can then set the stylesheet for your `QRangeSlider` instance:
+
+```python
+slider = QRangeSlider(Qt.Orientation.Horizontal)
+slider.setStyleSheet(QSS)
+```
