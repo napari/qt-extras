@@ -14,7 +14,7 @@ from qtpy.QtCore import QRect
 from qtpy.QtGui import QPainter, QPixmap
 from qtpy.QtWidgets import QStyleOptionViewItem, QWidget
 
-from superqt import QColormapComboBox
+from superqt import QColormapComboBox, QColormapFilterComboBox
 from superqt.cmap import (
     CmapCatalogComboBox,
     QColormapItemDelegate,
@@ -76,8 +76,9 @@ def test_catalog_combo(qtbot):
     assert wdg.currentColormap() == Colormap("viridis")
 
 
-def test_cmap_combo(qtbot):
-    wdg = QColormapComboBox(allow_user_colormaps=True)
+@pytest.mark.parametrize("widget_class", [QColormapComboBox, QColormapFilterComboBox])
+def test_cmap_filter_combo(qtbot, widget_class):
+    wdg = widget_class(allow_user_colormaps=True)
     qtbot.addWidget(wdg)
     wdg.show()
     assert wdg.userAdditionsAllowed()

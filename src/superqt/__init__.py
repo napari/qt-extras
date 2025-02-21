@@ -33,6 +33,7 @@ __all__ = [
     "QCollapsible",
     "QColorComboBox",
     "QColormapComboBox",
+    "QColormapFilterComboBox",
     "QDoubleRangeSlider",
     "QDoubleSlider",
     "QElidingLabel",
@@ -66,6 +67,10 @@ def __getattr__(name: str) -> Any:
         from .cmap import QColormapComboBox
 
         return QColormapComboBox
+    if name == "QColormapFilterComboBox":
+        from .cmap import QColormapFilterComboBox
+
+        return QColormapFilterComboBox
     if name == "QIconifyIcon":
         from .iconify import QIconifyIcon
 

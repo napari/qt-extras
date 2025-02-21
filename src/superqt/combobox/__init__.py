@@ -21,4 +21,8 @@ def __getattr__(name: str) -> Any:  # pragma: no cover
         from superqt.cmap import QColormapComboBox
 
         return QColormapComboBox
+    if name == "QColormapFilterComboBox":
+        from superqt.cmap import QColormapFilterComboBox
+
+        return QColormapFilterComboBox
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
